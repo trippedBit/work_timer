@@ -25,9 +25,10 @@ overTimeThreshold2|float|0.9|Overime label on right progressbar changes its colo
 
 To select a specific configuration, use the command line argument.
 ## Command line arguments
-Argument|Description
-|--|--|
--configuration|Configuration to use. Defaults to "default".
+Argument|Example|Description
+|--|--|--|
+-configuration|-configuration "dayShift"|Configuration to use. Defaults to "default".
+-noTopmost|-noTopmost|Disable topmost attribute (window can covered by others).
 ## Screenshots
 !["default GUI"](manual_files/work_timer_default.png)
 !["work time running"](manual_files/work_timer_running.png)

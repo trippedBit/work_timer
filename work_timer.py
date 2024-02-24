@@ -27,6 +27,10 @@ argParser.add_argument("-configuration",
                        type=str,
                        help="Configuration to use.",
                        default="default")
+argParser.add_argument("-noTopmost",
+                       help="Disable topmost attribute (window can covered by others)",
+                       default=False,
+                       action="store_true")
 args = argParser.parse_args()
 print("Used arguments are:")
 print(args)
@@ -189,4 +193,6 @@ entryOverTime.insert(index=0,
 workPbarEvent = Event()
 overtimePbarEvent = Event()
 
+if args.noTopmost is False:
+    window.attributes("-topmost", True)
 window.mainloop()
