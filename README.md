@@ -13,9 +13,9 @@ Additional configurations can be added directly in the code or by creating a fil
 ### The following parameters can be configured
 Parameter|Type|Example|Description
 |--|--|--|--|
-pauseTime|string|00:30:00|Break time in format "HH:MM:SS"
-workTime|string|00:06:00|Work time in format "HH:MM:SS"
-maxOverTime|string|00:30:00|Maximum overtime in format "HH:MM:SS"
+pauseTime|string|00:30:00|Break time in format "%H:%M:%S"
+workTime|string|00:06:00|Work time in format "%H:%M:%S"
+maxOverTime|string|00:30:00|Maximum overtime in format "%H:%M:%S"
 workTimeEndSound|string|C:\\Windows\\Media\\Alarm02.wav|Sound to play when work time reaches 100%. No sounds included, find some on your computer.
 overTimeEndSound|string|C:\\Windows\\Media\\Alarm02.wav|Sound to play when work time reaches 100%. No sounds included, find some on your computer.
 workTimeThreshold1|float|0.75|Work time label on left progressbar changes its color to yellow when crossing this work time percentage.
