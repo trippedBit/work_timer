@@ -7,20 +7,58 @@ import winsound
 
 from threading import Thread, Event
 
+# Configurations shipped with work_timer
+configurationDicts: dict = {"default": {
+                                "pauseTime": "00:30:00",
+                                "workTime": "00:06:00",
+                                "maxOverTime": "00:30:00",
+                                "workTimeEndSound": "C:\\Windows\\Media\\Alarm02.wav",
+                                "overTimeEndSound": "C:\\Windows\\Media\\Alarm02.wav",
+                                "workTimeThreshold1": 0.75,
+                                "workTimeThreshold2": 0.9,
+                                "overTimeThreshold1": 0.75,
+                                "overTimeThreshold2": 0.9
+                            },
+                            "test10m": {
+                                "pauseTime": "00:00:00",
+                                "workTime": "00:10:00",
+                                "maxOverTime": "00:00:00",
+                                "workTimeEndSound": "C:\\Windows\\Media\\Alarm02.wav",
+                                "overTimeEndSound": "C:\\Windows\\Media\\Alarm02.wav",
+                                "workTimeThreshold1": 0.75,
+                                "workTimeThreshold2": 0.9,
+                                "overTimeThreshold1": 0.75,
+                                "overTimeThreshold2": 0.9
+                            },
+                            "test1h": {
+                                "pauseTime": "00:00:00",
+                                "workTime": "01:00:00",
+                                "maxOverTime": "00:00:00",
+                                "workTimeEndSound": "C:\\Windows\\Media\\Alarm02.wav",
+                                "overTimeEndSound": "C:\\Windows\\Media\\Alarm02.wav",
+                                "workTimeThreshold1": 0.75,
+                                "workTimeThreshold2": 0.9,
+                                "overTimeThreshold1": 0.75,
+                                "overTimeThreshold2": 0.9
+                            },
+                            "test4h45mPause": {
+                                "pauseTime": "00:45:00",
+                                "workTime": "04:00:00",
+                                "maxOverTime": "00:00:00",
+                                "workTimeEndSound": "C:\\Windows\\Media\\Alarm02.wav",
+                                "overTimeEndSound": "C:\\Windows\\Media\\Alarm02.wav",
+                                "workTimeThreshold1": 0.75,
+                                "workTimeThreshold2": 0.9,
+                                "overTimeThreshold1": 0.75,
+                                "overTimeThreshold2": 0.9
+                            }
+                            }
+
+# Load user configurations if they exist
+userConfigurationDicts: dict = {}
 if os.path.exists("userConfiguration.py"):
     import userConfiguration  # type: ignore  # ignoring because it's the user's config and might or might not exist
-    configurationDicts = userConfiguration.configurationDicts
-else:
-    configurationDicts: dict = {"default": {
-                                    "pauseTime": "00:30:00",
-                                    "workTime": "00:06:00",
-                                    "maxOverTime": "00:30:00",
-                                    "workTimeEndSound": "C:\\Windows\\Media\\Alarm02.wav",
-                                    "overTimeEndSound": "C:\\Windows\\Media\\Alarm02.wav",
-                                    "workTimeThreshold1": 0.75,
-                                    "workTimeThreshold2": 0.9,
-                                    "overTimeThreshold1": 0.75,
-                                    "overTimeThreshold2": 0.9}}
+    userConfigurationDicts = userConfiguration.configurationDicts
 
 argParser = argparse.ArgumentParser()
 argParser.add_argument("-configuration",
@@ -34,7 +72,14 @@ argParser.add_argument("-noTopmost",
 args = argParser.parse_args()
 print("Used arguments are:")
 print(args)
-configurationDict = configurationDicts[args.configuration]
+
+# Use shipped configuration if it exists
+if args.configuration in configurationDicts:
+    configurationDict = configurationDicts[args.configuration]
+
+# Use user configuration instead of shipped one if it exists
+if args.configuration in userConfigurationDicts:
+    configurationDict = userConfigurationDicts[args.configuration]
 
 
 def overtimePbarLoop(overtimeSeconds: int, event: Event):
@@ -62,27 +107,43 @@ def overtimePbarLoop(overtimeSeconds: int, event: Event):
 
 
 def workPbarLoop(workTimeSeconds: int, overtimeSeconds: int, event: Event):
-    for i in range(1, workTimeSeconds + 1):
+    perfCounter = time.perf_counter()
+    timeNeeded = time.perf_counter() - perfCounter
+
+    while timeNeeded < workTimeSeconds:
         if event.is_set():
             print("workPbarLoop thread stopped by event.")
             break
-        window.update_idletasks()
-        workPbar["value"] = i
+
+        # Update GUI
+        workPbar["value"] = timeNeeded
         labelWorkTimeOnBar["text"] = time.strftime("%H:%M:%S",
-                                                   time.gmtime(i))
-        if i == workTimeSeconds:
+                                                   time.gmtime(timeNeeded))
+        if timeNeeded >= workTimeSeconds * configurationDict["workTimeThreshold2"]:
+            labelWorkTimeOnBar["background"] = "red"
+        elif timeNeeded >= workTimeSeconds * configurationDict["workTimeThreshold1"]:
+            labelWorkTimeOnBar["background"] = "yellow"
+
+        # Play end sound if needed
+        if timeNeeded >= workTimeSeconds:
             winsound.PlaySound(configurationDict["workTimeEndSound"],
                                winsound.SND_FILENAME | winsound.SND_ASYNC)
-        if i >= workTimeSeconds * configurationDict["workTimeThreshold2"]:
-            labelWorkTimeOnBar["background"] = "red"
-        elif i >= workTimeSeconds * configurationDict["workTimeThreshold1"]:
-            labelWorkTimeOnBar["background"] = "yellow"
-        time.sleep(1)
+
+        remainingTime = workTimeSeconds - timeNeeded
+        print("Remaining time: {}".format(remainingTime))
+        if remainingTime > 1:
+            time.sleep(1)
+        else:
+            time.sleep(remainingTime)
+
+        timeNeeded = time.perf_counter() - perfCounter
+        print("Time needed: {}s".format(timeNeeded))
+
     print("workPbarLoop thread ended")
     workPbarEvent.clear()
-    if workPbar["value"] == workTimeSeconds:
-        print("overtime starts")
-        Thread(target=overtimePbarLoop, args=(overtimeSeconds, overtimePbarEvent)).start()
+
+    print("overtime starts")
+    Thread(target=overtimePbarLoop, args=(overtimeSeconds, overtimePbarEvent)).start()
 
 
 def startButtonClicked():
