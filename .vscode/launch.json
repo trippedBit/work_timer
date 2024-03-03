@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "work_timer.py",
             "console": "integratedTerminal",
-            "args": ["-configuration", "test4h45mPause"]
+            "args": ["-configuration", "test1h45mOvertime"]
         }
     ]
 }

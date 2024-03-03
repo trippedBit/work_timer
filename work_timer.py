@@ -51,6 +51,17 @@ configurationDicts: dict = {"default": {
                                 "workTimeThreshold2": 0.9,
                                 "overTimeThreshold1": 0.75,
                                 "overTimeThreshold2": 0.9
+                            },
+                            "test1h45mOvertime": {
+                                "pauseTime": "00:00:00",
+                                "workTime": "01:00:00",
+                                "maxOverTime": "00:45:00",
+                                "workTimeEndSound": "C:\\Windows\\Media\\Alarm02.wav",
+                                "overTimeEndSound": "C:\\Windows\\Media\\Alarm02.wav",
+                                "workTimeThreshold1": 0.75,
+                                "workTimeThreshold2": 0.9,
+                                "overTimeThreshold1": 0.75,
+                                "overTimeThreshold2": 0.9
                             }
                             }
 
@@ -83,22 +94,38 @@ if args.configuration in userConfigurationDicts:
 
 
 def overtimePbarLoop(overtimeSeconds: int, event: Event):
-    for i in range(1, overtimeSeconds + 1):
+    perfCounter = time.perf_counter()
+    timeNeeded = time.perf_counter() - perfCounter
+
+    while timeNeeded < overtimeSeconds:
         if event.is_set():
             print("overtimePbarLoop thread stopped by event.")
             break
-        window.update_idletasks()
-        overtimePbar["value"] += 1
+
+        # Update GUI
+        overtimePbar["value"] = timeNeeded
         labelOverTimeOnBar["text"] = time.strftime("%H:%M:%S",
-                                                   time.gmtime(i))
-        if i == overtimeSeconds:
+                                                   time.gmtime(timeNeeded))
+        if timeNeeded >= overtimeSeconds * configurationDict["overTimeThreshold2"]:
+            labelWorkTimeOnBar["background"] = "red"
+        elif timeNeeded >= overtimeSeconds * configurationDict["overTimeThreshold1"]:
+            labelWorkTimeOnBar["background"] = "yellow"
+
+        # Play end sound if needed
+        if timeNeeded >= overtimeSeconds:
             winsound.PlaySound(configurationDict["overTimeEndSound"],
                                winsound.SND_FILENAME | winsound.SND_ASYNC)
-        if i >= overtimeSeconds * configurationDict["overTimeThreshold2"]:
-            labelOverTimeOnBar["background"] = "red"
-        elif i >= overtimeSeconds * configurationDict["overTimeThreshold1"]:
-            labelOverTimeOnBar["background"] = "yellow"
-        time.sleep(1)
+
+        remainingTime = overtimeSeconds - timeNeeded
+        print("Remaining time: {}".format(remainingTime))
+        if remainingTime > 1:
+            time.sleep(1)
+        else:
+            time.sleep(remainingTime)
+
+        timeNeeded = time.perf_counter() - perfCounter
+        print("Time needed: {}s".format(timeNeeded))
+
     print("overtimePbarLoop loop ended")
     overtimePbarEvent.clear()
     labelWorkTimeOnBar["background"] = originBackgroundColor
@@ -175,8 +202,8 @@ def startButtonClicked():
 
 # Create GUI
 window = tkinter.Tk()
-window.title("Work timer")
-window.geometry("250x140")
+window.title("Work timer v1.0.1")
+window.geometry("270x140")
 
 labelStartTime = tkinter.Label(master=window,
                                text="Start time")
